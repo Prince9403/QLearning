@@ -65,6 +65,19 @@ if __name__ == "__main__":
     plt.legend()
     plt.show()
 
+    alpha_list = [0.1, 0.3, 0.5, 0.7, 0.9]
+    histories = []
+
+    for alpha in alpha_list:
+        returns, hist = apply_td0_algorithm(costs, policy1, alpha=alpha)
+        histories.append(hist)
+
+    for alpha, hist in zip(alpha_list, histories):
+        plt.plot(hist, label=f"Alpha {alpha}")
+    plt.grid()
+    plt.legend()
+    plt.show()
+
 
 
 
