@@ -28,18 +28,26 @@ if __name__ == "__main__":
     costs = np.array([[0, 2, 9], [1, 0, 5], [3, 2, 0]])
 
     epsilon = 0.1
-    alpha = 0.6
-    gamma = 0.9
 
-    graph = Graph(costs)
+    alpha_list = [0.1, 0.3, 0.5, 0.7, 0.9]
+    histories = []
 
-    pol = EpsGreedyGraphPolicy(graph, epsilon, gamma)
+    for alpha in alpha_list:
 
-    history = sarsa_for_policy(pol, alpha, num_steps=10000, state_action=(0, 2))
+        gamma = 0.9
 
-    print(graph.dct_returns)
+        graph = Graph(costs)
 
-    plt.plot(history)
+        pol = EpsGreedyGraphPolicy(graph, epsilon, gamma)
+
+        history = sarsa_for_policy(pol, alpha, num_steps=10000, state_action=(0, 2))
+        histories.append(history)
+
+        print(graph.dct_returns)
+
+    for alpha, history in zip(alpha_list, histories):
+        plt.plot(history, label=f"Alpha {alpha}")
+    plt.legend()
     plt.grid()
     plt.show()
 
