@@ -20,6 +20,7 @@ def sarsa_for_policy(pol: GraphPolicy, alpha: float, num_steps: int, state_actio
 
         vnext2 = pol.next_state(v)
         graph.dct_returns[(v, vnext)] += alpha * (rew + gamma * graph.dct_returns[(vnext, vnext2)] - graph.dct_returns[(v, vnext)])
+        v = vnext
     return history
 
 
@@ -30,12 +31,11 @@ if __name__ == "__main__":
     alpha = 0.6
     gamma = 0.9
 
-    costs = np.array([[0, 2, 9], [1, 0, 5], [3, 2, 0]])
     graph = Graph(costs)
 
     pol = EpsGreedyGraphPolicy(graph, epsilon, gamma)
 
-    history = sarsa_for_policy(pol, alpha, num_steps=2000, state_action=(0, 2))
+    history = sarsa_for_policy(pol, alpha, num_steps=10000, state_action=(0, 2))
 
     print(graph.dct_returns)
 
