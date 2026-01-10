@@ -9,12 +9,13 @@ class Graph:
         self.costs = costs
         self.n = len(self.costs)
         self.dct_returns = defaultdict(float)
+        self.returns = np.zeros(self.n)
 
     def get_best_action(self, v, gamma):
         rews = np.zeros(self.n)
         for vnext in range(self.n):
             rews[vnext] = self.dct_returns[(v, vnext)]
-        return np.argmax(rews)
+        return np.argmax(rews), np.max(rews)
 
     def get_random_action(self, v):
         return np.random.randint(0, self.n)
@@ -24,6 +25,7 @@ class GraphPolicy(ABC):
     @abstractmethod
     def next_state(self, state):
         pass
+
 
 class EpsGreedyGraphPolicy(GraphPolicy):
     def __init__(self, graph: Graph, epsilon: float, gamma: float):
@@ -37,4 +39,29 @@ class EpsGreedyGraphPolicy(GraphPolicy):
         if p < self.epsilon:
             return self.graph.get_random_action(vertex)
         else:
-            return self.graph.get_best_action(vertex, self.gamma)
+            act, max_reward = self.graph.get_best_action(vertex, self.gamma)
+            return act
+
+
+class GreedyGraphPolicy(GraphPolicy):
+    def __init__(self, graph: Graph, gamma: float):
+        super().__init__()
+        self.graph = graph
+        self.gamma = gamma
+
+    def next_state(self, vertex):
+        act, max_reward = self.graph.get_best_action(vertex, self.gamma)
+        return act
+
+
+class DeterministicGraphPolicy(GraphPolicy):
+    def __init__(self, graph: Graph, next_vertices: np.ndarray):
+        super().__init__()
+        assert next_vertices.ndim == 1
+        assert next_vertices.shape[0] == graph.costs.shape[0]
+        assert next_vertices.dtype == int
+        self.graph = graph
+        self.next_vertices = next_vertices
+
+    def next_state(self, vertex):
+        return self.next_vertices[vertex]
