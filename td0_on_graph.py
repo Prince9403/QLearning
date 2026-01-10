@@ -8,7 +8,8 @@ def check_inputs(costs: np.ndarray, policy: np.ndarray):
     assert costs.shape[0] == policy.shape[0]
     assert policy.dtype == int
 
-def apply_td0_algorithm(costs: np.ndarray, policy: np.ndarray, gamma=0.8, alpha=0.2, num_iterations=1000, vertex_for_history: int = 0):
+
+def apply_td0_algorithm(costs: np.ndarray, policy: np.ndarray, gamma=0.9, alpha=0.2, num_iterations=1000, vertex_for_history: int = 0):
     check_inputs(costs, policy)
 
     returns = np.zeros(len(costs))
