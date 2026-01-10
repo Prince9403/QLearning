@@ -1,61 +1,70 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-
-def check_inputs(costs: np.ndarray, policy: np.ndarray):
-    assert costs.ndim == 2
-    assert policy.ndim == 1
-    assert costs.shape[0] == policy.shape[0]
-    assert policy.dtype == int
+from policy import Graph, GraphPolicy, DeterministicGraphPolicy
 
 
-def apply_td0_algorithm(costs: np.ndarray, policy: np.ndarray, gamma=0.9, alpha=0.2, num_iterations=1000, vertex_for_history: int = 0):
-    check_inputs(costs, policy)
-
-    returns = np.zeros(len(costs))
+def apply_td0_algorithm(pol: GraphPolicy, gamma=0.9, alpha=0.2, num_iterations=1000, vertex_for_history: int = 0):
     returns_history = []
+
+    graph = pol.graph
 
     v = 0
     for i in range(num_iterations):
-        returns_history.append(returns[vertex_for_history])
-        vnext = policy[v]
-        reward = costs[v, vnext]
-        returns[v] = returns[v] + alpha * (reward + gamma * returns[vnext] - returns[v])
+        returns_history.append(graph.returns[vertex_for_history])
+        vnext = pol.next_state(v)
+        reward = graph.costs[v, vnext]
+        graph.returns[v] += alpha * (reward + gamma * graph.returns[vnext] - graph.returns[v])
         v = vnext
-    return returns, returns_history
+    return graph.returns, returns_history
 
 
-def estimate_policy_monte_carlo(costs: np.ndarray, policy: np.ndarray, gamma=0.8, num_iterations=200):
-    check_inputs(costs, policy)
+def estimate_policy_monte_carlo(pol: DeterministicGraphPolicy, gamma=0.9, num_iterations=200):
 
-    returns = np.zeros(len(costs))
+    graph = pol.graph
+
     for vertex in range(len(costs)):
         g = 0.0
         v = vertex
-        scale = 1.0
+        scale = 1.0 # discount factor
         for i in range(num_iterations):
-            vnext = policy[v]
-            reward = costs[v, vnext]
+            vnext = pol.next_state(v)
+            reward = graph.costs[v, vnext]
             g += scale * reward
             scale *= gamma
             v = vnext
-        returns[vertex] = g
-    return returns
+        graph.returns[vertex] = g
+    return graph.returns
+
+
+def estimate_graph_policy_monte_carlo(costs: np.ndarray, next_vertices: np.ndarray):
+    graph = Graph(costs)
+    policy1 = DeterministicGraphPolicy(graph, next_vertices=next_vertices)
+    returns1_mc = estimate_policy_monte_carlo(policy1)
+    return returns1_mc
+
+
+def estimate_graph_policy_td0(costs: np.ndarray, next_vertices: np.ndarray, alpha: float):
+    graph = Graph(costs)
+    policy1 = DeterministicGraphPolicy(graph, next_vertices=next_vertices)
+    returns1_mc, returns1_history = apply_td0_algorithm(policy1, alpha=alpha)
+    return returns1_mc, returns1_history
 
 
 if __name__ == "__main__":
     costs = np.array([[0, 2, 9], [1, 0, 5], [3, 2, 0]])
-    policy1 = np.array([1, 2, 0])
-    policy2 = np.array([2, 0, 1])
 
-    returns1_mc = estimate_policy_monte_carlo(costs, policy1)
-    returns2_mc = estimate_policy_monte_carlo(costs, policy2)
+    next_vertices_1 = np.array([1, 2, 0])
+    next_vertices_2 = np.array([2, 0, 1])
 
-    print(f"Returns for policy 1 estimated by MonteCarlo: {returns1_mc}")
+    returns1_mc = estimate_graph_policy_monte_carlo(costs, next_vertices_1)
+    returns2_mc = estimate_graph_policy_monte_carlo(costs, next_vertices_2)
+
+    print(f"\Returns for policy 1 estimated by MonteCarlo: {returns1_mc}")
     print(f"Returns for policy 2 estimated by MonteCarlo: {returns2_mc}")
 
-    returns1_td0, hist1 = apply_td0_algorithm(costs, policy1)
-    returns2_td0, hist2 = apply_td0_algorithm(costs, policy2)
+    returns1_td0, hist1 = estimate_graph_policy_td0(costs, next_vertices_1, alpha=0.4)
+    returns2_td0, hist2 = estimate_graph_policy_td0(costs, next_vertices_2, alpha=0.4)
 
     print(f"Returns for policy 1 estimated by TD(0): {returns1_td0}")
     print(f"Returns for policy 2 estimated by TD(0): {returns2_td0}")
@@ -70,7 +79,7 @@ if __name__ == "__main__":
     histories = []
 
     for alpha in alpha_list:
-        returns, hist = apply_td0_algorithm(costs, policy1, alpha=alpha)
+        returns, hist = estimate_graph_policy_td0(costs, next_vertices_1, alpha=alpha)
         histories.append(hist)
 
     for alpha, hist in zip(alpha_list, histories):
