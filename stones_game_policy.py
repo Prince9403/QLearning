@@ -8,17 +8,15 @@ import numpy as np
 class StonesGame:
     def __init__(self, possible_stones_number):
         self.possible_stones_number = possible_stones_number
-        self.dct_returns = defaultdict(float)
+        self.dct_returns = defaultdict(float) # return for action-position pair is the (expected) gain
+        # that the user obtains if he starts in this position with this action
 
-    def get_best_action(self, stones_number, gamer_idx):
+    def get_best_action(self, stones_number):
         possible_actions = [num for num in self.possible_stones_number if num <= stones_number]
         rews = defaultdict(float)
         for action in possible_actions:
             rews[action] = self.dct_returns[(stones_number, action)]
-        if gamer_idx == 0:
-            key_best = max(rews, key=rews.get)
-        else:
-            key_best = min(rews, key=rews.get)
+        key_best = max(rews, key=rews.get)
         return key_best, rews[key_best]
 
     def get_random_action(self, stones_number):
@@ -44,5 +42,5 @@ class EpsGreedyStonesGamePolicy(StonesGamePolicy):
         if p < self.epsilons[gamer_idx]:
             return stones_number - self.game.get_random_action(stones_number)
         else:
-            best_act, best_reward = self.game.get_best_action(stones_number, gamer_idx)
+            best_act, best_reward = self.game.get_best_action(stones_number)
             return stones_number - best_act
