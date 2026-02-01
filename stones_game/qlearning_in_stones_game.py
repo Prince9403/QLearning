@@ -1,8 +1,3 @@
-import typing as t
-
-import matplotlib.pyplot as plt
-import numpy as np
-
 from stones_game_policy import StonesGame, StonesGamePolicy, EpsGreedyStonesGamePolicy
 
 
