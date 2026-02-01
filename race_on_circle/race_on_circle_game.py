@@ -124,7 +124,8 @@ def qlearning_for_nn_policy(pol: RabbitNNPolicy, gamma: float, aplha: float, num
 
     game = pol.game_on_circle
 
-    history = [game.state]
+    history_states = []
+    history_q = []
     for i in tqdm(range(num_steps)):
         action = pol.select_action()
         reward = game.get_reward(game.state, action)
@@ -134,10 +135,12 @@ def qlearning_for_nn_policy(pol: RabbitNNPolicy, gamma: float, aplha: float, num
         input_for_nn = torch.cat([game.state.to_torch_tensor(), action.to_torch_tensor()])
         q = pol.rabbit_nn(input_for_nn)
 
+        history_q.append(q.item())
+
         with torch.no_grad():
             _, max_q = pol.get_best_action(next_state, pol.rabbit_nn_target)
 
-        loss = reward + gamma * max_q - q
+        loss = (reward + gamma * max_q - q) ** 2
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
@@ -148,9 +151,9 @@ def qlearning_for_nn_policy(pol: RabbitNNPolicy, gamma: float, aplha: float, num
             pol.rabbit_nn_target.eval()
 
         game.apply_action(action)
-        history.append(game.state)
+        history_states.append(game.state)
 
-    return pol.rabbit_nn, history
+    return pol.rabbit_nn, history_states, history_q
 
 
 if __name__ == "__main__":
@@ -170,13 +173,18 @@ if __name__ == "__main__":
 
     print(f"{datetime.datetime.now()} Started learning")
 
-    rabbit_nn, history = qlearning_for_nn_policy(eps_greedy_pol, gamma=0.95, aplha=0.0001, num_steps=1000000, nn_copy_freq=200)
+    rabbit_nn, history_states, history_q = qlearning_for_nn_policy(eps_greedy_pol, gamma=0.95, aplha=0.0001, num_steps=100000, nn_copy_freq=200)
 
     print(f"{datetime.datetime.now()} Ended learning")
 
-    distances = [state.get_distance() for state in history]
+    distances = [state.get_distance() for state in history_states]
 
+    plt.subplot(1, 2, 1)
     plt.plot(distances)
+    plt.grid()
     plt.title("Distance between wolf and rabbit")
+    plt.subplot(1, 2, 2)
+    plt.plot(history_q)
+    plt.title("QValues")
     plt.grid()
     plt.show()
